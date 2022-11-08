@@ -28,12 +28,19 @@ func initDataBase() {
   fmt.Println("added Mr. Pickles")
 }
 
+func initRoutes(app *fiber.App) {
+  app.Get("api/v1/cat", cat.GetCats)
+  app.Get("api/v1/cat/:id", cat.GetCat)
+}
+
 func main() {
   app := fiber.New(fiber.Config{ColorScheme : fiber.Colors{Black: "\u001b[92m"}})
   app.Use(cors.New())
   
   initDataBase()
 
+  initRoutes(app) 
+  
   var cat cat.Cat
   database.Connection.First(&cat)
 
