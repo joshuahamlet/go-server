@@ -5,33 +5,37 @@ import (
 	"log"
 	"os"
 
+  "github.com/go-server/cat"
+	"github.com/go-server/database"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type Cat struct {
-  gorm.Model
-  Name string
-  Type string
+func initDataBase() {
+  var err error
+  database.Connection, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+  if err != nil {
+    panic("failed to connect to database")
+  }
+  fmt.Println("connected to database")
+  database.Connection.AutoMigrate(&cat.Cat{})
+  fmt.Println("database migrated")
+
+  database.Connection.Create(&cat.Cat{Name: "Mr. Pickles", Type: "Tabby", Rating: 10})
+  fmt.Println("added Mr. Pickles")
 }
 
 func main() {
-app := fiber.New(fiber.Config{ColorScheme : fiber.Colors{Black: "\u001b[92m"}})
-
-  db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
-  if err != nil {
-    panic("failed to connect database")
-  }
+  app := fiber.New(fiber.Config{ColorScheme : fiber.Colors{Black: "\u001b[92m"}})
+  app.Use(cors.New())
   
-  db.AutoMigrate(&Cat{})
+  initDataBase()
 
-  db.Create(&Cat{Name: "Mr. Pickles", Type: "Tabby"})
-
-  var cat Cat
-
-  db.First(&cat)
+  var cat cat.Cat
+  database.Connection.First(&cat)
 
   app.Get("/", func(c *fiber.Ctx) error {
     response := fmt.Sprintf("Hi, there!\n\nI have a cat named %s\n\n%s", cat.Name, os.Getenv("SECRET"))
